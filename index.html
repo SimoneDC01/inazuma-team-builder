@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draft Squadra - App Dinamica Ottimizzata</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --bg: #ecf0f1;
+            --el-montagna: #e49c2e;
+            --el-fuoco: #e45d4b;
+            --el-albero: #93e430;
+            --el-vento: #7ab4ff;
+        }
+        
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--primary); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        h1, h2, h3 { text-align: center; margin-top: 10px; margin-bottom: 15px; }
+        
+        #arena { display: flex; flex-direction: column; align-items: center; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 450px; margin-bottom: 20px; }
+        .battle-stage { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 15px; margin: 15px 0; }
+        .vs-text { font-weight: 900; font-size: 1.5rem; color: #2c3e50; text-shadow: 2px 2px 0px rgba(0,0,0,0.1); }
+        
+        .player-card { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; border-radius: 12px; padding: 20px 10px 20px 10px; cursor: pointer; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s, filter 0.2s; color: #1a252f; }
+        .player-card:active { transform: scale(0.95); filter: brightness(0.9); }
+        .player-card:hover { transform: translateY(-3px); }
+
+        .bg-montagna { background-color: var(--el-montagna); box-shadow: 0 6px 15px rgba(228, 156, 46, 0.4); }
+        .bg-fuoco { background-color: var(--el-fuoco); box-shadow: 0 6px 15px rgba(228, 93, 75, 0.4); }
+        .bg-albero { background-color: var(--el-albero); box-shadow: 0 6px 15px rgba(147, 228, 48, 0.4); }
+        .bg-vento { background-color: var(--el-vento); box-shadow: 0 6px 15px rgba(122, 180, 255, 0.4); }
+
+        .card-image { width: 75px; height: 75px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; background-color: white; border-width: 4px; border-style: solid; box-shadow: 0 4px 6px rgba(0,0,0,0.15); z-index: 1; }
+        .card-name { font-weight: 800; font-size: 1.1rem; text-align: center; margin-bottom: 4px; z-index: 1; }
+        .card-subtitle { font-size: 0.70rem; line-height: 1.2; text-align: center; color: rgba(0,0,0,0.65); margin-bottom: 12px; padding: 0 2px; font-weight: bold; }
+        .card-subtitle b { color: rgba(0,0,0,0.85); }
+
+        .border-M { border-color: #3498db !important; }
+        .border-F { border-color: #e84393 !important; }
+        .border-O { border-color: #95a5a6 !important; }
+
+        .role-tag { padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; color: white; text-transform: uppercase; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .POR { background-color: #f39c12; }
+        .DIF { background-color: #3498db; }
+        .CEN { background-color: #2ecc71; }
+        .ATT { background-color: #9b59b6; } 
+
+        #dashboard { width: 100%; max-width: 450px; }
+        .panel { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 10px; }
+        #log-roles { font-size: 0.85rem; color: #e74c3c; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+        #log-match { font-size: 0.95rem; color: #7f8c8d; text-align: center; margin-top: 10px; font-weight: bold; text-transform: capitalize; }
+        
+        .mini-player-item { padding: 8px 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; border-radius: 8px; color: #1a252f; }
+        .mini-bg-montagna { background-color: var(--el-montagna); }
+        .mini-bg-fuoco { background-color: var(--el-fuoco); }
+        .mini-bg-albero { background-color: var(--el-albero); }
+        .mini-bg-vento { background-color: var(--el-vento); }
+
+        button { background-color: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        #team-selector { padding: 5px 10px; border-radius: 8px; border: 2px solid var(--primary); font-weight: bold; color: var(--primary); background-color: white; cursor: pointer; font-size: 1rem; }
+
+        details { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 420px; margin-bottom: 15px; }
+        summary { font-weight: bold; cursor: pointer; color: #2980b9; outline: none; }
+        .db-form { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        textarea { width: 100%; height: 100px; padding: 10px; border-radius: 6px; border: 1px solid #bdc3c7; font-family: monospace; font-size: 0.8rem; box-sizing: border-box; }
+        .db-stats { text-align: center; font-size: 0.9rem; font-weight: bold; color: #27ae60; margin-bottom: 10px; }
+        
+        #empty-state { text-align: center; padding: 30px; font-size: 1.2rem; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+
+    <h1>Draft Squadra</h1>
+    
+    <div id="arena">
+        <h2 id="fase-title">Inizializzazione...</h2>
+        <div id="log-roles"></div>
+        <div id="empty-state" style="display: none;">
+            Il database è vuoto.<br><br>1. Copia lo script dallo <b>Strumento di Estrazione</b>.<br>2. Eseguilo su Inazuma per ottenere i dati.<br>3. Incollali in <b>Gestione Database Giocatori</b>.
+        </div>
+        <div class="battle-stage" id="battle-stage"></div>
+        <div id="log-match"></div>
+    </div>
+
+    <div id="dashboard">
+        <div class="panel">
+            <h3 style="display: flex; justify-content: space-between; align-items: center; margin-top: 0;">
+                <span>Dashboard</span>
+                <select id="team-selector" onchange="changeViewedTeam()"></select>
+            </h3>
+            <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 15px;">
+            <h4 style="margin: 5px 0;">Titolari (<span id="starters-count">0</span>/11)</h4>
+            <div id="starters-list">Nessuno schierato.</div>
+        </div>
+        <div class="panel">
+            <h4 style="margin: 5px 0;">Panchina (<span id="bench-count">0</span>/5)</h4>
+            <div id="bench-list">Nessuno schierato.</div>
+        </div>
+    </div>
+
+    <details>
+        <summary>🛠️ Strumento di Estrazione (Scraper)</summary>
+        <div class="db-form">
+            <p style="font-size: 0.85rem; margin:0;">
+                Copia il codice qui sotto, apri il <a href="https://zukan.inazuma.jp/en/chara_list/" target="_blank">sito di Inazuma</a>, premi <b>F12</b> (Console), incolla ed esegui.
+            </p>
+            <textarea id="scraper-code" readonly style="height: 60px; background-color: #f8f9fa; cursor: pointer;" onclick="this.select()">
+async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.log("⏳ Estrazione background in corso...");for(let page=1;page<=6;page++){console.log(`🔄 Pagina ${page}/6...`);try{let response=await fetch(`https://zukan.inazuma.jp/en/chara_list/?page=${page}&per_page=1000`);let htmlText=await response.text();let parser=new DOMParser();let doc=parser.parseFromString(htmlText,'text/html');let rows=doc.querySelectorAll('.charaListResult tbody tr:nth-child(odd)');rows.forEach((row)=>{let tds=row.querySelectorAll('td');if(tds.length<12)return;let roleText=tds[8].innerText.trim();if(roleText!=="Player")return;let name=row.querySelector('.nameBox .name').innerText.trim();let nickname=tds[3].innerText.trim();let signature=name+"|||"+nickname;if(seen.has(signature))return;seen.add(signature);let imgTag=row.querySelector('.nameBox picture img');let imageSrc=imgTag?imgTag.src:'';let checkbox=row.querySelector('.my-team-checkbox');let id=checkbox?checkbox.getAttribute('data-chara-id'):'dyn_'+Date.now()+Math.random();let genderText=tds[5].innerText.trim();let gender=genderText==="Male"?"M":(genderText==="Female"?"F":"O");let elementText=tds[6].innerText.trim();let element="vento";if(elementText==="Mountain")element="montagna";if(elementText==="Fire")element="fuoco";if(elementText==="Forest")element="albero";let posText=tds[7].innerText.trim();let role="ATT";if(posText==="GK")role="POR";if(posText==="DF")role="DIF";if(posText==="MF")role="CEN";let gameText=tds[4].innerText.trim();let teamHtml=tds[11].innerHTML;let teamFirstLine=teamHtml.split(/<br\s*\/?>/i)[0].replace(/<[^>]+>/g,'').trim();let tempDiv=document.createElement('div');tempDiv.innerHTML=teamFirstLine;let teamText=tempDiv.textContent||"";allPlayers.push({id:id,name:name,role:role,gender:gender,element:element,image:imageSrc,game:gameText,team:teamText});});}catch(error){console.error(`❌ Errore pagina ${page}:`,error);}}let jsonResult=JSON.stringify(allPlayers,null,4);console.log(`✅ Trovati: ${allPlayers.length}`);try{copy(jsonResult);console.log("📋 COPIATO IN AUTOMATICO NEGLI APPUNTI!");}catch(e){console.log(jsonResult);}}scrapeAllInazuma();
+            </textarea>
+            <button style="background-color: #2980b9;" onclick="copyScraperCode()">📋 Copia Script Scraper</button>
+        </div>
+    </details>
+
+    <details>
+        <summary>⚙️ Gestione Database Giocatori</summary>
+        <div class="db-form">
+            <div class="db-stats" id="db-stats">Giocatori nel Database: 0</div>
+            <p style="font-size: 0.8rem; margin:0;">Incolla qui l'array JSON ottenuto dallo scraper per importare/aggiornare il database:</p>
+            <textarea id="json-input" placeholder='[{"id":"xyz", "name":"Mark Evans"...}]'></textarea>
+            <button style="background-color: #27ae60;" onclick="syncDatabase()">Sincronizza e Aggiungi</button>
+            <p id="sync-msg" style="font-size: 0.85rem; color: #27ae60; text-align: center; margin:0; font-weight:bold;"></p>
+        </div>
+    </details>
+
+    <button style="width:100%; max-width: 450px; margin-top: 20px; margin-bottom: 40px;" onclick="resetTournament()">⚠️ Resetta Torneo e Database</button>
+
+    <script>
+        const validFormations = [
+            { DIF: 4, CEN: 4, ATT: 2 }, // 4-4-2
+            { DIF: 3, CEN: 5, ATT: 2 }, // 3-5-2
+            { DIF: 4, CEN: 5, ATT: 1 }, // 4-5-1
+            { DIF: 3, CEN: 6, ATT: 1 }, // 3-6-1
+            { DIF: 5, CEN: 4, ATT: 1 }  // 5-4-1
+        ];
+
+        const MAX_TEAMS = 10;
+        const STATE_KEY = 'draftSquadraState_v10'; // Chiave pulita
+        const DB_KEY = 'draftSquadraDB_v10';
+
+        let pool = [];
+
+        // STRUTTURA OTTIMIZZATA: Solo ID.
+        let state = {
+            phase: 1, 
+            roundQueue: [], 
+            nextRoundQueue: [], 
+            defeatedBy: {}, 
+            teams: [{ starters: [], bench: [] }], 
+            currentTeamIndex: 0,
+            candidatesPool: [] 
+        };
+
+        let viewedTeamIndex = 0; 
+
+        // GARBAGE COLLECTOR: Elimina i salvataggi delle vecchie versioni per liberare spazio
+        function cleanOldVersions() {
+            let keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                let key = localStorage.key(i);
+                if (key && key.startsWith('draftSquadra') && key !== STATE_KEY && key !== DB_KEY) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+        }
+
+        // HELPER: Recupera l'oggetto giocatore partendo dall'ID
+        function getPlayer(id) {
+            return pool.find(p => p.id === id);
+        }
+
+        function shuffleArray(array) {
+            let shuffled = [...array];
+            let currentIndex = shuffled.length, randomIndex;
+            while (currentIndex !== 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [shuffled[currentIndex], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[currentIndex]];
+            }
+            return shuffled;
+        }
+
+        function saveAll() {
+            try {
+                localStorage.setItem(STATE_KEY, JSON.stringify(state));
+                localStorage.setItem(DB_KEY, JSON.stringify(pool));
+                document.getElementById('db-stats').innerText = `Giocatori nel Database: ${pool.length}`;
+            } catch (e) {
+                alert("Errore memoria piena! Hai troppi dati nel browser. Usa il tasto 'Resetta Torneo' in fondo.");
+            }
+        }
+
+        function loadAll() {
+            const savedDB = localStorage.getItem(DB_KEY);
+            if (savedDB) { pool = JSON.parse(savedDB); }
+            
+            const savedState = localStorage.getItem(STATE_KEY);
+            if (savedState) {
+                state = JSON.parse(savedState);
+                viewedTeamIndex = state.currentTeamIndex;
+            }
+            document.getElementById('db-stats').innerText = `Giocatori nel Database: ${pool.length}`;
+        }
+
+        function resetTournament() {
+            if(confirm("Attenzione: questo cancellerà SIA i progressi del torneo SIA il database giocatori interno. Procedere?")) {
+                let keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    let key = localStorage.key(i);
+                    if (key && key.startsWith('draftSquadra')) {
+                        keysToRemove.push(key);
+                    }
+                }
+                keysToRemove.forEach(k => localStorage.removeItem(k));
+                location.reload();
+            }
+        }
+
+        function copyScraperCode() {
+            let scraperTextarea = document.getElementById("scraper-code");
+            scraperTextarea.select();
+            scraperTextarea.setSelectionRange(0, 99999); 
+            navigator.clipboard.writeText(scraperTextarea.value).then(() => {
+                alert("Script Scraper copiato! Vai su zukan.inazuma.jp e incollalo nella Console (F12).");
+            }).catch(err => {
+                alert("Errore nella copia. Puoi farlo manualmente selezionando il testo.");
+            });
+        }
+
+        function syncDatabase() {
+            let jsonText = document.getElementById('json-input').value.trim();
+            if (!jsonText) return;
+
+            let newPlayers;
+            try {
+                newPlayers = JSON.parse(jsonText);
+                if (!Array.isArray(newPlayers)) throw new Error("Non è un array");
+            } catch (e) {
+                alert("Errore di sintassi nel JSON. Assicurati di aver incollato correttamente il risultato.");
+                return;
+            }
+
+            let addedCount = 0;
+            let newlyAddedIds = [];
+
+            newPlayers.forEach(p => {
+                if (!pool.some(existing => existing.id === p.id)) {
+                    pool.push(p);
+                    state.defeatedBy[p.id] = []; 
+                    newlyAddedIds.push(p.id);
+                    addedCount++;
+                }
+            });
+
+            let msgLabel = document.getElementById('sync-msg');
+            
+            if (addedCount === 0) {
+                msgLabel.innerText = "Nessun giocatore nuovo trovato (Database già aggiornato).";
+                msgLabel.style.color = "#f39c12";
+                document.getElementById('json-input').value = '';
+                setTimeout(() => msgLabel.innerText = "", 3000);
+                return;
+            }
+
+            newlyAddedIds.forEach(newId => {
+                let p = getPlayer(newId);
+                if (state.phase === 1) {
+                    state.nextRoundQueue.push(newId); 
+                } 
+                else if (state.phase === 2) {
+                    let validRoles = getValidRoles();
+                    if (validRoles.includes(p.role)) {
+                        state.nextRoundQueue.push(newId); 
+                    } else {
+                        state.candidatesPool.push(newId); 
+                    }
+                }
+                else if (state.phase === 3 && state.currentTeamIndex < MAX_TEAMS) {
+                    state.phase = 2;
+                    state.candidatesPool.push(newId);
+                }
+            });
+
+            document.getElementById('json-input').value = '';
+            msgLabel.innerText = `✅ Inseriti ${addedCount} nuovi giocatori nel database!`;
+            msgLabel.style.color = "#27ae60";
+            setTimeout(() => msgLabel.innerText = "", 5000);
+            
+            saveAll();
+            
+            if (state.phase === 1 && state.roundQueue.length === 0 && state.nextRoundQueue.length > 0) {
+                 nextStep();
+            } else if (state.phase === 2 && state.roundQueue.length === 0) {
+                 state.roundQueue = shuffleArray(getValidCandidates(state.candidatesPool, getValidRoles()));
+                 nextStep();
+            }
+            updateUI();
+        }
+
+        function changeViewedTeam() {
+            let selector = document.getElementById('team-selector');
+            viewedTeamIndex = parseInt(selector.value);
+            updateDashboard();
+        }
+
+        function createCardHTML(p) {
+            if (!p) return "";
+            let gameStr = p.game || "Gioco Sconosciuto";
+            let teamStr = p.team || "Squadra Sconosciuta";
+            
+            return `
+                <div class="player-card bg-${p.element}" id="card-${p.id}">
+                    <img src="${p.image}" alt="${p.name}" class="card-image border-${p.gender}">
+                    <div class="card-name">${p.name}</div>
+                    <div class="card-subtitle">${gameStr}<br><b>${teamStr}</b></div>
+                    <span class="role-tag ${p.role}">${p.role}</span>
+                </div>
+            `;
+        }
+
+        function updateUI() {
+            let title = document.getElementById('fase-title');
+            let rolesDiv = document.getElementById('log-roles');
+            let matchLog = document.getElementById('log-match');
+            let stage = document.getElementById('battle-stage');
+            let emptyState = document.getElementById('empty-state');
+            
+            let currentTeam = state.teams[state.currentTeamIndex];
+
+            let selector = document.getElementById('team-selector');
+            selector.innerHTML = state.teams.map((_, i) => `<option value="${i}">Squadra ${i + 1}</option>`).join('');
+            selector.value = viewedTeamIndex;
+
+            if (pool.length === 0) {
+                title.innerText = "Benvenuto!";
+                rolesDiv.innerText = "";
+                matchLog.innerText = "";
+                stage.innerHTML = "";
+                emptyState.style.display = "block";
+                updateDashboard();
+                return;
+            } else {
+                emptyState.style.display = "none";
+            }
+
+            if (state.phase === 1) {
+                title.innerText = `Squadra ${state.currentTeamIndex + 1}: Cerca il Capitano`;
+                rolesDiv.innerText = "";
+            } else if (state.phase === 2) {
+                let isStarter = currentTeam.starters.length < 11;
+                title.innerText = `Sq. ${state.currentTeamIndex + 1} - Scelta ` + (isStarter ? `Titolare ${currentTeam.starters.length + 1}/11` : `Panchina ${currentTeam.bench.length + 1}/5`);
+                let validRoles = getValidRoles();
+                rolesDiv.innerText = "Ruoli eleggibili: " + validRoles.join(", ");
+            } else {
+                title.innerText = "Tutte le Squadre Definite!";
+                rolesDiv.innerText = "";
+                stage.innerHTML = "<h2>Torneo in Pausa o Terminato</h2>";
+                matchLog.innerText = state.currentTeamIndex >= MAX_TEAMS ? "Hai riempito 10 squadre!" : "Non ci sono giocatori sufficienti per i ruoli rimasti. Importane altri!";
+            }
+
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            const renderMiniPlayer = p => {
+                if(!p) return "";
+                return `
+                <div class="mini-player-item mini-bg-${p.element}">
+                    <img src="${p.image}" class="border-${p.gender}" style="width: 38px; height: 38px; border-radius: 50%; background: white; border-width: 3px; border-style: solid; display: block;">
+                    <div style="display: flex; flex-direction: column; justify-content: center;">
+                        <span style="font-weight: 800; font-size: 0.95rem; line-height: 1;">${p.name}</span>
+                        <span style="font-size: 0.65rem; color: rgba(0,0,0,0.6); margin-top: 2px;">${p.game || ''} - <b>${p.team || ''}</b></span>
+                    </div>
+                    <span class="role-tag ${p.role}" style="padding: 3px 8px; font-size: 0.70rem; margin-left: auto;">${p.role}</span> 
+                </div>`;
+            };
+            
+            let viewedTeam = state.teams[viewedTeamIndex];
+            const roleWeight = { "POR": 1, "DIF": 2, "CEN": 3, "ATT": 4 };
+            
+            let sortedStarters = viewedTeam.starters.map(getPlayer).filter(p=>p).sort((a, b) => roleWeight[a.role] - roleWeight[b.role]);
+            let sortedBench = viewedTeam.bench.map(getPlayer).filter(p=>p).sort((a, b) => roleWeight[a.role] - roleWeight[b.role]);
+            
+            document.getElementById('starters-list').innerHTML = sortedStarters.length ? sortedStarters.map(renderMiniPlayer).join('') : "Nessuno schierato.";
+            document.getElementById('starters-count').innerText = sortedStarters.length;
+            
+            document.getElementById('bench-list').innerHTML = sortedBench.length ? sortedBench.map(renderMiniPlayer).join('') : "Nessuno schierato.";
+            document.getElementById('bench-count').innerText = sortedBench.length;
+        }
+
+        function countRoles(playerIds) { 
+            return playerIds.reduce((acc, id) => { 
+                let p = getPlayer(id);
+                if (p) acc[p.role]++; 
+                return acc; 
+            }, { POR: 0, DIF: 0, CEN: 0, ATT: 0 }); 
+        }
+        
+        function getValidRoles() {
+            let currentTeam = state.teams[state.currentTeamIndex];
+            let roles = [];
+            const counts = countRoles(currentTeam.starters);
+            const benchCounts = countRoles(currentTeam.bench);
+
+            if (currentTeam.starters.length < 11) {
+                if (counts.POR < 1) roles.push("POR");
+                let possibleFormations = validFormations.filter(f => f.DIF >= counts.DIF && f.CEN >= counts.CEN && f.ATT >= counts.ATT);
+                ["DIF", "CEN", "ATT"].forEach(role => { if (possibleFormations.some(f => f[role] > counts[role])) roles.push(role); });
+            } else if (currentTeam.bench.length < 5) {
+                if (counts.POR + benchCounts.POR < 2) roles.push("POR");
+                roles.push("DIF", "CEN", "ATT"); 
+            }
+            return roles;
+        }
+
+        function getValidCandidates(poolCandidateIds, validRoles) {
+            let valid = [];
+            let queue = [...poolCandidateIds];
+            let electedIds = new Set(state.teams.flatMap(t => [...t.starters, ...t.bench]));
+
+            while(queue.length > 0) {
+                let id = queue.shift();
+                if (electedIds.has(id)) continue;
+                
+                let p = getPlayer(id);
+                if (!p) continue;
+
+                if (validRoles.includes(p.role)) {
+                    valid.push(id);
+                } else {
+                    if (state.defeatedBy[id]) queue.push(...state.defeatedBy[id]);
+                }
+            }
+            return [...new Set(valid)]; 
+        }
+
+        function initApp() {
+            cleanOldVersions(); // Pulisce lo sporco vecchio
+            loadAll();
+            
+            if (pool.length > 0 && state.roundQueue.length === 0 && state.nextRoundQueue.length === 0 && state.phase === 1 && state.teams[0].starters.length === 0) {
+                state.roundQueue = shuffleArray(pool.map(p => p.id)); 
+                saveAll();
+            }
+
+            updateUI();
+            if (pool.length > 0) nextStep();
+        }
+
+        function nextStep() {
+            if (state.phase === 3) {
+                updateUI();
+                return;
+            }
+
+            while (state.roundQueue.length === 1) {
+                state.nextRoundQueue.push(state.roundQueue.pop());
+            }
+
+            if (state.roundQueue.length === 0) {
+                if (state.nextRoundQueue.length === 1) {
+                    handleBracketWinner(state.nextRoundQueue[0]);
+                } else if (state.nextRoundQueue.length > 1) {
+                    state.roundQueue = shuffleArray(state.nextRoundQueue);
+                    state.nextRoundQueue = [];
+                    saveAll();
+                    nextStep();
+                } else {
+                    state.phase = 3;
+                    saveAll();
+                    updateUI();
+                }
+                return;
+            }
+
+            renderMatch(state.roundQueue[0], state.roundQueue[1]);
+        }
+
+        function getRoundName(nPlayers) {
+            if (nPlayers <= 2) return "finale";
+            if (nPlayers <= 4) return "semifinali";
+            if (nPlayers <= 8) return "quarti di finale";
+            if (nPlayers <= 16) return "ottavi di finale";
+            if (nPlayers <= 32) return "sedicesimi di finale";
+            if (nPlayers <= 64) return "trentaduesimi di finale";
+            if (nPlayers <= 128) return "sessantaquattresimi di finale";
+            let pow = Math.pow(2, Math.ceil(Math.log2(nPlayers)));
+            return pow + "esimi di finale";
+        }
+
+        function renderMatch(idA, idB) {
+            let pA = getPlayer(idA);
+            let pB = getPlayer(idB);
+
+            const stage = document.getElementById('battle-stage');
+            stage.innerHTML = `
+                ${createCardHTML(pA)}
+                <div class="vs-text">VS</div>
+                ${createCardHTML(pB)}
+            `;
+            
+            let totalPlayersInRound = state.roundQueue.length + (state.nextRoundQueue.length * 2);
+            let totalMatches = Math.floor(totalPlayersInRound / 2);
+            let currentMatch = state.nextRoundQueue.length + 1;
+            let roundName = getRoundName(totalPlayersInRound);
+
+            document.getElementById('log-match').innerText = `${roundName} (${currentMatch} di ${totalMatches})`;
+
+            document.getElementById(`card-${pA.id}`).onclick = () => processVote(pA.id, pB.id);
+            document.getElementById(`card-${pB.id}`).onclick = () => processVote(pB.id, pA.id);
+        }
+
+        function processVote(winnerId, loserId) {
+            if (!state.defeatedBy[winnerId].includes(loserId)) {
+                state.defeatedBy[winnerId].push(loserId);
+            }
+
+            state.roundQueue.shift();
+            state.roundQueue.shift();
+            state.nextRoundQueue.push(winnerId);
+            saveAll();
+            nextStep();
+        }
+
+        function handleBracketWinner(winnerId) {
+            let currentTeam = state.teams[state.currentTeamIndex];
+
+            if (state.phase === 1) {
+                currentTeam.starters.push(winnerId);
+                state.candidatesPool = [...state.defeatedBy[winnerId]];
+                state.phase = 2;
+            } else if (state.phase === 2) {
+                if (currentTeam.starters.length < 11) {
+                    currentTeam.starters.push(winnerId);
+                } else {
+                    currentTeam.bench.push(winnerId);
+                }
+                
+                let electedIds = new Set(state.teams.flatMap(t => [...t.starters, ...t.bench]));
+                state.candidatesPool = state.candidatesPool.filter(id => !electedIds.has(id));
+                
+                state.defeatedBy[winnerId].forEach(loserId => {
+                    if (!electedIds.has(loserId) && !state.candidatesPool.includes(loserId)) {
+                        state.candidatesPool.push(loserId);
+                    }
+                });
+            }
+
+            if (currentTeam.starters.length === 11 && currentTeam.bench.length === 5) {
+                state.currentTeamIndex++;
+                
+                if (state.currentTeamIndex >= MAX_TEAMS) {
+                    state.phase = 3;
+                    viewedTeamIndex = state.currentTeamIndex - 1; 
+                    saveAll();
+                    updateUI();
+                    nextStep();
+                    return;
+                } else {
+                    state.teams.push({ starters: [], bench: [] });
+                    viewedTeamIndex = state.currentTeamIndex;
+                }
+            }
+
+            viewedTeamIndex = state.currentTeamIndex; 
+            updateUI(); 
+
+            let validRoles = getValidRoles(); 
+            let validCandidates = getValidCandidates(state.candidatesPool, validRoles);
+            
+            if (validCandidates.length === 0) {
+                state.phase = 3; 
+                saveAll();
+                updateUI();
+                nextStep();
+                return;
+            }
+
+            state.roundQueue = shuffleArray(validCandidates);
+            state.nextRoundQueue = [];
+            saveAll();
+            nextStep();
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
