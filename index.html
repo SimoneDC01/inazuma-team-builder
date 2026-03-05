@@ -65,6 +65,9 @@
         textarea { width: 100%; height: 100px; padding: 10px; border-radius: 6px; border: 1px solid #bdc3c7; font-family: monospace; font-size: 0.8rem; box-sizing: border-box; }
         .db-stats { text-align: center; font-size: 0.9rem; font-weight: bold; color: #27ae60; margin-bottom: 10px; }
         
+        /* Stile per l'input file */
+        input[type="file"] { font-size: 0.85rem; padding: 8px; border: 1px dashed #bdc3c7; border-radius: 6px; background: #fdfdfd; cursor: pointer; }
+        
         #empty-state { text-align: center; padding: 30px; font-size: 1.2rem; color: #7f8c8d; }
     </style>
 </head>
@@ -76,7 +79,7 @@
         <h2 id="fase-title">Inizializzazione...</h2>
         <div id="log-roles"></div>
         <div id="empty-state" style="display: none;">
-            Il database è vuoto.<br><br>1. Copia lo script dallo <b>Strumento di Estrazione</b>.<br>2. Eseguilo su Inazuma per ottenere i dati.<br>3. Incollali in <b>Gestione Database Giocatori</b>.
+            Il database è vuoto.<br><br>1. Copia lo script dallo <b>Strumento di Estrazione</b>.<br>2. Eseguilo su Inazuma per ottenere i dati.<br>3. Importali in <b>Gestione Database Giocatori</b>.
         </div>
         <div class="battle-stage" id="battle-stage"></div>
         <div id="log-match"></div>
@@ -115,9 +118,16 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
         <summary>⚙️ Gestione Database Giocatori</summary>
         <div class="db-form">
             <div class="db-stats" id="db-stats">Giocatori nel Database: 0</div>
-            <p style="font-size: 0.8rem; margin:0;">Incolla qui l'array JSON ottenuto dallo scraper per importare/aggiornare il database:</p>
+            
+            <p style="font-size: 0.8rem; margin:0;"><b>Opzione A:</b> Carica un file .json salvato</p>
+            <input type="file" id="file-input" accept=".json, application/json" onchange="loadFromFile(event)">
+            
+            <div style="text-align: center; font-size: 0.8rem; color: #7f8c8d; margin: 5px 0;">- OPPURE -</div>
+            
+            <p style="font-size: 0.8rem; margin:0;"><b>Opzione B:</b> Incolla l'array JSON dalla clipboard</p>
             <textarea id="json-input" placeholder='[{"id":"xyz", "name":"Mark Evans"...}]'></textarea>
-            <button style="background-color: #27ae60;" onclick="syncDatabase()">Sincronizza e Aggiungi</button>
+            <button style="background-color: #27ae60;" onclick="syncFromTextarea()">Sincronizza e Aggiungi (da Testo)</button>
+            
             <p id="sync-msg" style="font-size: 0.85rem; color: #27ae60; text-align: center; margin:0; font-weight:bold;"></p>
         </div>
     </details>
@@ -134,12 +144,11 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
         ];
 
         const MAX_TEAMS = 10;
-        const STATE_KEY = 'draftSquadraState_v10'; // Chiave pulita
+        const STATE_KEY = 'draftSquadraState_v10'; 
         const DB_KEY = 'draftSquadraDB_v10';
 
         let pool = [];
 
-        // STRUTTURA OTTIMIZZATA: Solo ID.
         let state = {
             phase: 1, 
             roundQueue: [], 
@@ -152,7 +161,6 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
 
         let viewedTeamIndex = 0; 
 
-        // GARBAGE COLLECTOR: Elimina i salvataggi delle vecchie versioni per liberare spazio
         function cleanOldVersions() {
             let keysToRemove = [];
             for (let i = 0; i < localStorage.length; i++) {
@@ -164,7 +172,6 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
             keysToRemove.forEach(k => localStorage.removeItem(k));
         }
 
-        // HELPER: Recupera l'oggetto giocatore partendo dall'ID
         function getPlayer(id) {
             return pool.find(p => p.id === id);
         }
@@ -227,16 +234,36 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
             });
         }
 
-        function syncDatabase() {
+        // --- NUOVO GESTORE IMPORTAZIONE (FILE E TESTO) ---
+        function loadFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                processNewData(content);
+                event.target.value = ''; // Permette di ricaricare lo stesso file
+            };
+            reader.onerror = function() {
+                alert("Errore durante la lettura del file.");
+            };
+            reader.readAsText(file);
+        }
+
+        function syncFromTextarea() {
             let jsonText = document.getElementById('json-input').value.trim();
             if (!jsonText) return;
+            processNewData(jsonText);
+        }
 
+        function processNewData(jsonText) {
             let newPlayers;
             try {
                 newPlayers = JSON.parse(jsonText);
                 if (!Array.isArray(newPlayers)) throw new Error("Non è un array");
             } catch (e) {
-                alert("Errore di sintassi nel JSON. Assicurati di aver incollato correttamente il risultato.");
+                alert("Errore di sintassi nel JSON. Assicurati che i dati incollati o il file caricato siano corretti.");
                 return;
             }
 
@@ -253,11 +280,11 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
             });
 
             let msgLabel = document.getElementById('sync-msg');
+            document.getElementById('json-input').value = '';
             
             if (addedCount === 0) {
                 msgLabel.innerText = "Nessun giocatore nuovo trovato (Database già aggiornato).";
                 msgLabel.style.color = "#f39c12";
-                document.getElementById('json-input').value = '';
                 setTimeout(() => msgLabel.innerText = "", 3000);
                 return;
             }
@@ -281,7 +308,6 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
                 }
             });
 
-            document.getElementById('json-input').value = '';
             msgLabel.innerText = `✅ Inseriti ${addedCount} nuovi giocatori nel database!`;
             msgLabel.style.color = "#27ae60";
             setTimeout(() => msgLabel.innerText = "", 5000);
@@ -296,6 +322,7 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
             }
             updateUI();
         }
+        // --- FINE GESTORE IMPORTAZIONE ---
 
         function changeViewedTeam() {
             let selector = document.getElementById('team-selector');
@@ -435,7 +462,7 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
         }
 
         function initApp() {
-            cleanOldVersions(); // Pulisce lo sporco vecchio
+            cleanOldVersions(); 
             loadAll();
             
             if (pool.length > 0 && state.roundQueue.length === 0 && state.nextRoundQueue.length === 0 && state.phase === 1 && state.teams[0].starters.length === 0) {
