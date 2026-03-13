@@ -235,7 +235,6 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
             });
         }
 
-        // --- NUOVO GESTORE IMPORTAZIONE (FILE E TESTO) ---
         function loadFromFile(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -244,7 +243,7 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
             reader.onload = function(e) {
                 const content = e.target.result;
                 processNewData(content);
-                event.target.value = ''; // Permette di ricaricare lo stesso file
+                event.target.value = ''; 
             };
             reader.onerror = function() {
                 alert("Errore durante la lettura del file.");
@@ -323,7 +322,6 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
             }
             updateUI();
         }
-        // --- FINE GESTORE IMPORTAZIONE ---
 
         function changeViewedTeam() {
             let selector = document.getElementById('team-selector');
@@ -542,6 +540,9 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
             if (!state.defeatedBy[winnerId].includes(loserId)) {
                 state.defeatedBy[winnerId].push(loserId);
             }
+
+            // FIX BUG DUPLICATI: Togli lo sconfitto dalla piscina dei candidati
+            state.candidatesPool = state.candidatesPool.filter(id => id !== loserId);
 
             state.roundQueue.shift();
             state.roundQueue.shift();
