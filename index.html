@@ -65,7 +65,6 @@
         textarea { width: 100%; height: 100px; padding: 10px; border-radius: 6px; border: 1px solid #bdc3c7; font-family: monospace; font-size: 0.8rem; box-sizing: border-box; }
         .db-stats { text-align: center; font-size: 0.9rem; font-weight: bold; color: #27ae60; margin-bottom: 10px; }
         
-        /* Stile per l'input file */
         input[type="file"] { font-size: 0.85rem; padding: 8px; border: 1px dashed #bdc3c7; border-radius: 6px; background: #fdfdfd; cursor: pointer; }
         
         #empty-state { text-align: center; padding: 30px; font-size: 1.2rem; color: #7f8c8d; }
@@ -137,14 +136,16 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
     <script>
         const validFormations = [
             { DIF: 4, CEN: 4, ATT: 2 }, // 4-4-2
+            { DIF: 4, CEN: 3, ATT: 3 }, // 4-3-3 <-- Inserito
             { DIF: 3, CEN: 5, ATT: 2 }, // 3-5-2
-            { DIF: 4, CEN: 3, ATT: 3 }, // 4-3-3
             { DIF: 4, CEN: 5, ATT: 1 }, // 4-5-1
             { DIF: 3, CEN: 6, ATT: 1 }, // 3-6-1
             { DIF: 5, CEN: 4, ATT: 1 }  // 5-4-1
         ];
 
         const MAX_TEAMS = 10;
+        
+        // MANTENUTO ALLA V10 SU RICHIESTA PER NON PERDERE I DATI ATTUALI
         const STATE_KEY = 'draftSquadraState_v10'; 
         const DB_KEY = 'draftSquadraDB_v10';
 
@@ -537,11 +538,12 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
         }
 
         function processVote(winnerId, loserId) {
-            if (!state.defeatedBy[winnerId].includes(loserId)) {
-                state.defeatedBy[winnerId].push(loserId);
+            // FIX DEL RE-PARENTING
+            for (let key in state.defeatedBy) {
+                state.defeatedBy[key] = state.defeatedBy[key].filter(id => id !== loserId);
             }
 
-            // FIX BUG DUPLICATI: Togli lo sconfitto dalla piscina dei candidati
+            state.defeatedBy[winnerId].push(loserId);
             state.candidatesPool = state.candidatesPool.filter(id => id !== loserId);
 
             state.roundQueue.shift();
