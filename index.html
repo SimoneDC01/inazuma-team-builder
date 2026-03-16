@@ -18,10 +18,12 @@
         h1, h2, h3 { text-align: center; margin-top: 10px; margin-bottom: 15px; }
         
         #arena { display: flex; flex-direction: column; align-items: center; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 450px; margin-bottom: 20px; }
-        .battle-stage { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 15px; margin: 15px 0; }
-        .vs-text { font-weight: 900; font-size: 1.5rem; color: #2c3e50; text-shadow: 2px 2px 0px rgba(0,0,0,0.1); }
+        .battle-stage { display: flex; justify-content: space-between; align-items: stretch; width: 100%; gap: 15px; margin: 15px 0; }
+        .vs-text { font-weight: 900; font-size: 1.5rem; color: #2c3e50; text-shadow: 2px 2px 0px rgba(0,0,0,0.1); display: flex; align-items: center; }
         
-        .player-card { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; border-radius: 12px; padding: 20px 10px 20px 10px; cursor: pointer; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s, filter 0.2s; color: #1a252f; }
+        .card-container { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        
+        .player-card { width: 100%; position: relative; display: flex; flex-direction: column; align-items: center; border-radius: 12px; padding: 20px 10px 20px 10px; cursor: pointer; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s, filter 0.2s; color: #1a252f; box-sizing: border-box; }
         .player-card:active { transform: scale(0.95); filter: brightness(0.9); }
         .player-card:hover { transform: translateY(-3px); }
 
@@ -45,6 +47,9 @@
         .CEN { background-color: #2ecc71; }
         .ATT { background-color: #9b59b6; } 
 
+        .ban-btn { background-color: #e74c3c; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: bold; width: 100%; transition: background-color 0.2s; }
+        .ban-btn:hover { background-color: #c0392b; }
+
         #dashboard { width: 100%; max-width: 450px; }
         .panel { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 10px; }
         #log-roles { font-size: 0.85rem; color: #e74c3c; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -56,7 +61,7 @@
         .mini-bg-albero { background-color: var(--el-albero); }
         .mini-bg-vento { background-color: var(--el-vento); }
 
-        button { background-color: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        button.main-btn { background-color: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         #team-selector { padding: 5px 10px; border-radius: 8px; border: 2px solid var(--primary); font-weight: bold; color: var(--primary); background-color: white; cursor: pointer; font-size: 1rem; }
 
         details { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 420px; margin-bottom: 15px; }
@@ -109,7 +114,7 @@
             <textarea id="scraper-code" readonly style="height: 60px; background-color: #f8f9fa; cursor: pointer;" onclick="this.select()">
 async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.log("⏳ Estrazione background in corso...");for(let page=1;page<=6;page++){console.log(`🔄 Pagina ${page}/6...`);try{let response=await fetch(`https://zukan.inazuma.jp/en/chara_list/?page=${page}&per_page=1000`);let htmlText=await response.text();let parser=new DOMParser();let doc=parser.parseFromString(htmlText,'text/html');let rows=doc.querySelectorAll('.charaListResult tbody tr:nth-child(odd)');rows.forEach((row)=>{let tds=row.querySelectorAll('td');if(tds.length<12)return;let roleText=tds[8].innerText.trim();if(roleText!=="Player")return;let name=row.querySelector('.nameBox .name').innerText.trim();let nickname=tds[3].innerText.trim();let signature=name+"|||"+nickname;if(seen.has(signature))return;seen.add(signature);let imgTag=row.querySelector('.nameBox picture img');let imageSrc=imgTag?imgTag.src:'';let checkbox=row.querySelector('.my-team-checkbox');let id=checkbox?checkbox.getAttribute('data-chara-id'):'dyn_'+Date.now()+Math.random();let genderText=tds[5].innerText.trim();let gender=genderText==="Male"?"M":(genderText==="Female"?"F":"O");let elementText=tds[6].innerText.trim();let element="vento";if(elementText==="Mountain")element="montagna";if(elementText==="Fire")element="fuoco";if(elementText==="Forest")element="albero";let posText=tds[7].innerText.trim();let role="ATT";if(posText==="GK")role="POR";if(posText==="DF")role="DIF";if(posText==="MF")role="CEN";let gameText=tds[4].innerText.trim();let teamHtml=tds[11].innerHTML;let teamFirstLine=teamHtml.split(/<br\s*\/?>/i)[0].replace(/<[^>]+>/g,'').trim();let tempDiv=document.createElement('div');tempDiv.innerHTML=teamFirstLine;let teamText=tempDiv.textContent||"";allPlayers.push({id:id,name:name,role:role,gender:gender,element:element,image:imageSrc,game:gameText,team:teamText});});}catch(error){console.error(`❌ Errore pagina ${page}:`,error);}}let jsonResult=JSON.stringify(allPlayers,null,4);console.log(`✅ Trovati: ${allPlayers.length}`);try{copy(jsonResult);console.log("📋 COPIATO IN AUTOMATICO NEGLI APPUNTI!");}catch(e){console.log(jsonResult);}}scrapeAllInazuma();
             </textarea>
-            <button style="background-color: #2980b9;" onclick="copyScraperCode()">📋 Copia Script Scraper</button>
+            <button class="main-btn" style="background-color: #2980b9;" onclick="copyScraperCode()">📋 Copia Script Scraper</button>
         </div>
     </details>
 
@@ -125,22 +130,22 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
             
             <p style="font-size: 0.8rem; margin:0;"><b>Opzione B:</b> Incolla l'array JSON dalla clipboard</p>
             <textarea id="json-input" placeholder='[{"id":"xyz", "name":"Mark Evans"...}]'></textarea>
-            <button style="background-color: #27ae60;" onclick="syncFromTextarea()">Sincronizza e Aggiungi (da Testo)</button>
+            <button class="main-btn" style="background-color: #27ae60;" onclick="syncFromTextarea()">Sincronizza e Aggiungi (da Testo)</button>
             
             <p id="sync-msg" style="font-size: 0.85rem; color: #27ae60; text-align: center; margin:0; font-weight:bold;"></p>
         </div>
     </details>
 
-    <button style="width:100%; max-width: 450px; margin-top: 20px; margin-bottom: 40px;" onclick="resetTournament()">⚠️ Resetta Torneo e Database</button>
+    <button class="main-btn" style="width:100%; max-width: 450px; margin-top: 20px; margin-bottom: 40px;" onclick="resetTournament()">⚠️ Resetta Torneo e Database</button>
 
     <script>
         const validFormations = [
-            { DIF: 4, CEN: 4, ATT: 2 }, // 4-4-2
-            { DIF: 4, CEN: 3, ATT: 3 }, // 4-3-3 <-- Inserito
-            { DIF: 3, CEN: 5, ATT: 2 }, // 3-5-2
-            { DIF: 4, CEN: 5, ATT: 1 }, // 4-5-1
-            { DIF: 3, CEN: 6, ATT: 1 }, // 3-6-1
-            { DIF: 5, CEN: 4, ATT: 1 }  // 5-4-1
+            { DIF: 4, CEN: 4, ATT: 2 }, 
+            { DIF: 4, CEN: 3, ATT: 3 }, 
+            { DIF: 3, CEN: 5, ATT: 2 }, 
+            { DIF: 4, CEN: 5, ATT: 1 }, 
+            { DIF: 3, CEN: 6, ATT: 1 }, 
+            { DIF: 5, CEN: 4, ATT: 1 }  
         ];
 
         const MAX_TEAMS = 10;
@@ -521,9 +526,15 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
 
             const stage = document.getElementById('battle-stage');
             stage.innerHTML = `
-                ${createCardHTML(pA)}
+                <div class="card-container">
+                    ${createCardHTML(pA)}
+                    <button class="ban-btn" onclick="banPlayer('${pA.id}', '${pB.id}')">🗑️ Elimina Duplicato</button>
+                </div>
                 <div class="vs-text">VS</div>
-                ${createCardHTML(pB)}
+                <div class="card-container">
+                    ${createCardHTML(pB)}
+                    <button class="ban-btn" onclick="banPlayer('${pB.id}', '${pA.id}')">🗑️ Elimina Duplicato</button>
+                </div>
             `;
             
             let totalPlayersInRound = state.roundQueue.length + (state.nextRoundQueue.length * 2);
@@ -537,8 +548,37 @@ async function scrapeAllInazuma(){let allPlayers=[];let seen=new Set();console.l
             document.getElementById(`card-${pB.id}`).onclick = () => processVote(pB.id, pA.id);
         }
 
+        // --- NUOVA FUNZIONE: ELIMINA IL CLONE IN TEMPO REALE ---
+        function banPlayer(bannedId, winnerId) {
+            if(!confirm("Sicuro di voler eliminare questo duplicato in modo definitivo? L'altro giocatore avanzerà automaticamente.")) return;
+
+            // 1. Passaggio di consegne: Il vincitore eredita chi era stato sconfitto dal clone
+            let orphans = state.defeatedBy[bannedId] || [];
+            orphans.forEach(orphanId => {
+                if (!state.defeatedBy[winnerId].includes(orphanId) && orphanId !== winnerId) {
+                    state.defeatedBy[winnerId].push(orphanId);
+                }
+            });
+
+            // 2. Epurazione: Rimuovi il clone da ogni struttura dati
+            delete state.defeatedBy[bannedId];
+            for (let key in state.defeatedBy) {
+                state.defeatedBy[key] = state.defeatedBy[key].filter(id => id !== bannedId);
+            }
+            state.candidatesPool = state.candidatesPool.filter(id => id !== bannedId);
+            state.nextRoundQueue = state.nextRoundQueue.filter(id => id !== bannedId);
+            pool = pool.filter(p => p.id !== bannedId);
+
+            // 3. Vittoria a tavolino per l'altro giocatore
+            state.roundQueue.shift(); // Togli A
+            state.roundQueue.shift(); // Togli B
+            state.nextRoundQueue.push(winnerId);
+            
+            saveAll();
+            nextStep();
+        }
+
         function processVote(winnerId, loserId) {
-            // FIX DEL RE-PARENTING
             for (let key in state.defeatedBy) {
                 state.defeatedBy[key] = state.defeatedBy[key].filter(id => id !== loserId);
             }
